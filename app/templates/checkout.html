@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}LUMIA | Checkout{% endblock %}
+
+{% block content %}
+<section class="section-shell checkout-layout">
+    <div class="checkout-main">
+        <p class="eyebrow">Checkout</p>
+        <h1>Premium checkout, without friction.</h1>
+        <button class="primary-button wide-button" type="button" data-guest-checkout>One-Click Guest Checkout</button>
+        <form class="checkout-form">
+            <label>
+                Full name
+                <input type="text" placeholder="Nethmi Perera">
+            </label>
+            <label>
+                Mobile number
+                <input type="tel" placeholder="+94 77 123 4567">
+            </label>
+            <label>
+                Address
+                <input type="text" placeholder="17 Alfred House Gardens, Colombo 03">
+            </label>
+            <label>
+                District
+                <select data-shipping-select>
+                    {% for district in shipping_options.keys() %}
+                    <option value="{{ district }}">{{ district }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="shipping-result" data-shipping-result></div>
+            <div class="bnpl-badges prominent">
+                <span>Mintpay</span>
+                <span>Koko</span>
+            </div>
+            <button class="primary-button" type="button">Place Order</button>
+        </form>
+    </div>
+    <aside class="checkout-summary">
+        <div class="summary-card">
+            <p class="eyebrow">Order Summary</p>
+            <div data-cart-page-items></div>
+            <div class="mini-cart-total-line">
+                <span>Total</span>
+                <strong data-cart-subtotal-page>Rs. 0</strong>
+            </div>
+        </div>
+    </aside>
+</section>
+{% endblock %}

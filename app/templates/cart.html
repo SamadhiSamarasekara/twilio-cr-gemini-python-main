@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}LUMIA | Cart{% endblock %}
+
+{% block content %}
+<section class="section-shell cart-layout">
+    <div>
+        <p class="eyebrow">Your Cart</p>
+        <h1>Curated pieces, ready for checkout.</h1>
+        <div class="cart-items" data-cart-page-items></div>
+    </div>
+    <aside class="cart-summary">
+        <div class="summary-card">
+            <p class="eyebrow">Delivery Estimate</p>
+            <label for="cart-district">Select district</label>
+            <select id="cart-district" data-shipping-select>
+                {% for district in shipping_options.keys() %}
+                <option value="{{ district }}">{{ district }}</option>
+                {% endfor %}
+            </select>
+            <div class="shipping-result" data-shipping-result></div>
+        </div>
+        <div class="summary-card">
+            <div class="mini-cart-total-line">
+                <span>Subtotal</span>
+                <strong data-cart-subtotal-page>Rs. 0</strong>
+            </div>
+            <div class="bnpl-badges">
+                <span>Mintpay available</span>
+                <span>Koko installments available</span>
+            </div>
+            <a class="primary-button" href="/checkout">Proceed to Checkout</a>
+        </div>
+    </aside>
+</section>
+{% endblock %}

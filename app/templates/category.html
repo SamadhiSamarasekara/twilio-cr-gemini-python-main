@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}LUMIA | {{ category.name }}{% endblock %}
+
+{% block content %}
+<section class="category-hero">
+    <video class="hero-video" autoplay muted loop playsinline>
+        <source src="{{ category.video_url }}" type="video/mp4">
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="category-hero-copy">
+        <p class="eyebrow">{{ category.eyebrow }}</p>
+        <h1>{{ category.hero_title }}</h1>
+        <p>{{ category.hero_copy }}</p>
+    </div>
+</section>
+
+<section class="section-shell">
+    <div class="section-heading split-heading">
+        <div>
+            <p class="eyebrow">Aura: {{ category.aura }}</p>
+            <h2>{{ category.name }} Collection</h2>
+        </div>
+        <p class="supporting-copy">{{ category.highlight }}</p>
+    </div>
+    <div class="product-grid">
+        {% for product in products %}
+        <article class="product-card">
+            <a href="/product/{{ product.slug }}">
+                <img id="card-{{ product.slug }}" src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy">
+            </a>
+            <div class="product-card-copy">
+                <p class="eyebrow">{{ product.eyebrow }}</p>
+                <h3><a href="/product/{{ product.slug }}">{{ product.name }}</a></h3>
+                <p>{{ product.subtitle }}</p>
+                <strong>{{ product.price_display }}</strong>
+            </div>
+            <div class="swatch-row compact">
+                {% for color_name, color_image in product.colors.items() %}
+                <button class="swatch-chip" type="button" data-preview-image="{{ color_image }}" data-preview-target="card-{{ product.slug }}">
+                    <span>{{ color_name }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            <button
+                class="ghost-button"
+                type="button"
+                data-add-to-cart
+                data-slug="{{ product.slug }}"
+                data-name="{{ product.name }}"
+                data-price="{{ product.price }}"
+                data-image="{{ product.primary_image }}"
+                data-category="{{ product.category_name }}"
+            >
+                Add to Cart
+            </button>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

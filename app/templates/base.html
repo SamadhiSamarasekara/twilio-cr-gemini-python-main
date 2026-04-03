@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LUMIA{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/lumia.css">
+</head>
+<body data-free-shipping-threshold="{{ free_shipping_threshold|default(30000) }}">
+    <header class="site-header glass">
+        <a class="brand" href="/">LUMIA</a>
+        <nav class="main-nav">
+            {% for nav_category in categories %}
+            <a href="/category/{{ nav_category.slug }}" data-aura="{{ nav_category.aura }}">{{ nav_category.name }}</a>
+            {% endfor %}
+            <a href="/checkout">Checkout</a>
+        </nav>
+        <button class="mini-cart-trigger" type="button" data-open-mini-cart>
+            Cart
+            <span class="mini-cart-count" data-cart-count>0</span>
+        </button>
+    </header>
+
+    <aside class="mini-cart-panel" data-mini-cart>
+        <div class="mini-cart-header">
+            <div>
+                <p class="eyebrow">Your Edit</p>
+                <h3>Mini Cart</h3>
+            </div>
+            <button class="ghost-button" type="button" data-close-mini-cart>Close</button>
+        </div>
+        <div class="shipping-progress">
+            <div class="shipping-progress-bar">
+                <span data-shipping-progress></span>
+            </div>
+            <p data-shipping-message>Unlock free shipping at Rs. 30,000.</p>
+        </div>
+        <div class="mini-cart-items" data-mini-cart-items></div>
+        <div class="mini-cart-footer">
+            <div class="mini-cart-total-line">
+                <span>Subtotal</span>
+                <strong data-cart-subtotal>Rs. 0</strong>
+            </div>
+            <a class="primary-button" href="/cart">View Bag</a>
+        </div>
+    </aside>
+    <div class="page-overlay" data-page-overlay></div>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div>
+            <p class="eyebrow">Luminous Minimalism</p>
+            <h3>Quiet luxury for Sri Lanka.</h3>
+        </div>
+        <div class="footer-copy">
+            <p>District-based delivery estimates, one-click guest checkout, and curated styling built into every step.</p>
+        </div>
+    </footer>
+
+    <script>
+        window.LUMIA = {
+            shippingOptions: {{ shipping_options|default({})|tojson }},
+        };
+    </script>
+    <script src="/static/js/lumia.js" defer></script>
+</body>
+</html>

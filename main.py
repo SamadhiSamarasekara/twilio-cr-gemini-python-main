@@ -2,9 +2,21 @@ import os
 import json
 import uvicorn
 from google import genai
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import Response
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
+
+from app.catalog import (
+    CATEGORIES,
+    DISTRICT_SHIPPING,
+    FREE_SHIPPING_THRESHOLD,
+    all_products,
+    featured_products,
+    get_product,
+    products_for_category,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,9 +24,7 @@ load_dotenv()
 # --- Configuration ---
 PORT = int(os.getenv("PORT", "8080"))
 DOMAIN = os.getenv("NGROK_URL") 
-if not DOMAIN:
-    raise ValueError("NGROK_URL environment variable not set.")
-WS_URL = f"wss://{DOMAIN}/ws"
+WS_URL = f"wss://{DOMAIN}/ws" if DOMAIN else None
 
 # Updated greeting to reflect the new model
 WELCOME_GREETING = "Hi! I am a voice assistant powered by Twilio and Google Gemini. Ask me anything!"
@@ -31,11 +41,7 @@ Please adhere to the following rules:
 # --- Gemini API Initialization ---
 # Get your Google API key from https://aistudio.google.com/app/apikey
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise ValueError("GOOGLE_API_KEY environment variable not set.")
-
-# Initialize the Gemini client with the new SDK
-client = genai.Client(api_key=GOOGLE_API_KEY)
+client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
 
 # Store active chat sessions
 # We will now store Gemini's chat session objects
@@ -43,6 +49,127 @@ sessions = {}
 
 # Create FastAPI app
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def storefront_home(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "home.html",
+        {
+            "categories": list(CATEGORIES.values()),
+            "featured_products": featured_products(),
+            "all_products": all_products(),
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
+
+
+@app.get("/category/{slug}", response_class=HTMLResponse)
+async def category_page(request: Request, slug: str):
+    category = CATEGORIES.get(slug)
+    if category is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    return templates.TemplateResponse(
+        request,
+        "category.html",
+        {
+            "category": category,
+            "categories": list(CATEGORIES.values()),
+            "products": products_for_category(slug),
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
+
+
+@app.get("/product/{slug}", response_class=HTMLResponse)
+async def product_page(request: Request, slug: str):
+    product = get_product(slug)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    return templates.TemplateResponse(
+        request,
+        "product.html",
+        {
+            "product": product,
+            "categories": list(CATEGORIES.values()),
+            "shipping_options": DISTRICT_SHIPPING,
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
+
+
+@app.get("/cart", response_class=HTMLResponse)
+async def cart_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "cart.html",
+        {
+            "categories": list(CATEGORIES.values()),
+            "shipping_options": DISTRICT_SHIPPING,
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
+
+
+@app.get("/checkout", response_class=HTMLResponse)
+async def checkout_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "checkout.html",
+        {
+            "categories": list(CATEGORIES.values()),
+            "shipping_options": DISTRICT_SHIPPING,
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
+
+
+@app.get("/api/shipping/{district}", response_class=JSONResponse)
+async def shipping_quote(district: str):
+    shipping = DISTRICT_SHIPPING.get(district)
+    if shipping is None:
+        raise HTTPException(status_code=404, detail="District not found")
+    return JSONResponse({"district": district, **shipping})
+
+
+@app.get("/api/fit/{slug}", response_class=JSONResponse)
+async def fit_recommendation(slug: str, height_cm: int, weight_kg: int, preference: str = "regular"):
+    product = get_product(slug)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    sizes = product["sizes"]
+    if len(sizes) == 1:
+        size = sizes[0]
+    else:
+        score = 0
+        if height_cm >= 175:
+            score += 1
+        if height_cm >= 185:
+            score += 1
+        if weight_kg >= 72:
+            score += 1
+        if weight_kg >= 84:
+            score += 1
+        if preference == "relaxed":
+            score += 1
+        if preference == "slim":
+            score -= 1
+        score = max(0, min(score, len(sizes) - 1))
+        size = sizes[score]
+
+    return JSONResponse(
+        {
+            "size": size,
+            "message": f"We recommend {size} for a {preference} {product['fit_profile']} fit.",
+            "fit_tip": product["fit_tip"],
+        }
+    )
 
 def gemini_response(chat_session, user_prompt):
     """Get a response from the Gemini API."""
@@ -53,6 +180,12 @@ def gemini_response(chat_session, user_prompt):
 @app.get("/twiml")
 async def twiml_endpoint():
     """Endpoint that returns TwiML for Twilio to connect to the WebSocket"""
+    if not WS_URL:
+        return Response(
+            content="Twilio voice mode is unavailable until NGROK_URL is configured.",
+            media_type="text/plain",
+            status_code=503,
+        )
     # Note: Twilio ConversationRelay has built-in TTS. We specify a provider and voice.
     # You can change 'ElevenLabs' to 'Amazon' or 'Google' if you prefer their TTS.
     xml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -67,6 +200,9 @@ async def twiml_endpoint():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time communication"""
+    if client is None:
+        await websocket.close(code=1011)
+        return
     await websocket.accept()
     call_sid = None
     

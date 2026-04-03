@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}LUMIA | Quiet Luxury Storefront{% endblock %}
+
+{% block content %}
+<section class="home-hero">
+    <div class="hero-copy-block">
+        <p class="eyebrow">Sri Lanka Luxury Fashion</p>
+        <h1>Quiet luxury, cinematic movement, and luminous minimalism.</h1>
+        <p class="hero-lead">LUMIA blends Prism White, Obsidian Black, and Lumina Gold into a premium multi-page fashion experience across Men, Women, and Accessories.</p>
+        <div class="hero-actions">
+            <a class="primary-button" href="/category/women">Shop Women</a>
+            <a class="secondary-button" href="/category/men">Explore Men</a>
+        </div>
+    </div>
+    <div class="smart-split">
+        {% for category in categories %}
+        <a class="aura-panel aura-{{ category.slug }}" href="/category/{{ category.slug }}">
+            <video autoplay muted loop playsinline poster="">
+                <source src="{{ category.video_url }}" type="video/mp4">
+            </video>
+            <div class="aura-panel-copy">
+                <p class="eyebrow">{{ category.aura }}</p>
+                <h2>{{ category.name }}</h2>
+                <p>{{ category.highlight }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="featured-grid section-shell">
+    <div class="section-heading">
+        <p class="eyebrow">Curated Edit</p>
+        <h2>Modern icons, built for tactile luxury and fast mobile shopping.</h2>
+    </div>
+    <div class="product-grid">
+        {% for product in featured_products %}
+        <article class="product-card">
+            <a href="/product/{{ product.slug }}">
+                <img src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy">
+            </a>
+            <div class="product-card-copy">
+                <p class="eyebrow">{{ product.eyebrow }}</p>
+                <h3><a href="/product/{{ product.slug }}">{{ product.name }}</a></h3>
+                <p>{{ product.price_display }}</p>
+            </div>
+            <button
+                class="ghost-button"
+                type="button"
+                data-add-to-cart
+                data-slug="{{ product.slug }}"
+                data-name="{{ product.name }}"
+                data-price="{{ product.price }}"
+                data-image="{{ product.primary_image }}"
+                data-category="{{ product.category_name }}"
+            >
+                Add to Cart
+            </button>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="luxury-banner section-shell">
+    <div>
+        <p class="eyebrow">Smarter Web Items</p>
+        <h2>Find My Fit, district delivery logic, glassmorphism cart flows, and instant swatch updates.</h2>
+    </div>
+    <div class="banner-points">
+        <p>Mobile-first micro-interactions with haptic support on compatible devices.</p>
+        <p>Mintpay and Koko badges surfaced at cart and checkout for frictionless decision-making.</p>
+        <p>Free shipping progress appears everywhere, not just at checkout.</p>
+    </div>
+</section>
+{% endblock %}
